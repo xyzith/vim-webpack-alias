@@ -1,6 +1,6 @@
-function! WebpackAliasGetAlias(rootDir)
-  let l:script = 'import(\"'.a:rootDir.'/webpack.config.js\").then((config) => {
-    \ const l = config?.default(null, {})?.resolve?.alias || {};
+function! WebpackAliasGetAlias(rootDir, fileName)
+  let l:script = 'import(\"'.a:rootDir.'/'.a:fileName.'\").then((config) => {
+    \ const l = config?.default({}, {})?.resolve?.alias || {};
     \ Object.entries(l).forEach(([k, v]) => console.log(k, v))
     \ })'
   let l:result = system('node -e "'.l:script.'"')
@@ -14,7 +14,6 @@ endfunction
 
 function! WebpackAliasInex()
   let l:rootDir = finddir('.git/..', expand('%:p:h').';')
-  echo fnameescape(v:fname)
   for i in g:webpackAliasList
     let l:alias = i[0]
     let l:path = i[1]
@@ -27,13 +26,17 @@ endfunction
 
 function! WebpackAliasIncludeAlias()
   let l:rootDir = finddir('.git/..', expand('%:p:h').';')
+  let l:configFile = ['webpack.config.js', 'vite.config.js']
 
-  if filereadable(l:rootDir.'/webpack.config.js')
-    let g:webpackAliasList = WebpackAliasGetAlias(l:rootDir)
-    " fix @ not working
-    setlocal isfname+=@-@
-    set inex=WebpackAliasInex()
-  endif
+  for f in l:configFile
+    if filereadable(l:rootDir.'/'.f)
+      let g:webpackAliasList = WebpackAliasGetAlias(l:rootDir, f)
+      " fix @ not working
+      setlocal isfname+=@-@
+      set inex=WebpackAliasInex()
+      break
+    endif
+  endfor
 endfunction
 
 call WebpackAliasIncludeAlias()
